@@ -20,8 +20,8 @@ from uuid import NAMESPACE_URL, uuid5
 ROOT = Path(__file__).resolve().parent
 CATEGORIES = {
     "smartphones": "Điện thoại & Máy tính bảng", "tablets": "Điện thoại & Máy tính bảng",
-    "laptops": "Laptop", "mens-shirts": "Thời trang Nam", "mens-shoes": "Thời trang Nam",
-    "womens-dresses": "Thời trang Nữ", "womens-shoes": "Thời trang Nữ", "tops": "Thời trang Nữ",
+    "laptops": "Laptop", "mens-shirts": "Thời trang Nam", "mens-shoes": "Giày dép & Phụ kiện",
+    "womens-dresses": "Thời trang Nữ", "womens-shoes": "Giày dép & Phụ kiện", "tops": "Thời trang Nữ",
     "beauty": "Mỹ phẩm", "skin-care": "Mỹ phẩm", "fragrances": "Nước hoa",
     "furniture": "Nội thất", "home-decoration": "Đồ gia dụng", "kitchen-accessories": "Đồ gia dụng",
     "mobile-accessories": "Phụ kiện điện thoại", "mens-watches": "Đồng hồ",
@@ -146,11 +146,41 @@ def variants(category):
     return [{"Phiên bản": "Tiêu chuẩn"}]
 
 
-def import_catalog(args, catalog):
+def connect_database():
     import psycopg2
+    from psycopg2.extensions import parse_dsn
+    # libpq accepts both postgresql:// URLs (Neon) and key=value DSNs.
+    dsn = os.getenv("MARKETPLACE_AI_DSN", "")
+    options = parse_dsn(dsn)
+    host = options.get("host", os.getenv("PGHOST", "localhost"))
+    if any(h.endswith(".neon.tech") for h in host.split(",")):
+        if options.get("sslmode", os.getenv("PGSSLMODE")) not in {"require", "verify-ca", "verify-full"}:
+            options["sslmode"] = "require"
+    options.setdefault("connect_timeout", "15")
+    if not dsn and not os.getenv("PGDATABASE"):
+        options["dbname"] = "marketplace_mvp"
+    return psycopg2.connect(**options)
+
+
+def ann_mode(cur):
+    cur.execute("""SELECT is_generated, udt_name FROM information_schema.columns
+        WHERE table_schema='public' AND table_name='product_images'
+        AND column_name='feature_vector_ann'""")
+    column = cur.fetchone()
+    if not column:
+        return "absent"
+    if column[1] != "vector":
+        raise ValueError("feature_vector_ann phải có kiểu pgvector vector(1024)")
+    cur.execute("""SELECT format_type(atttypid,atttypmod) FROM pg_attribute
+        WHERE attrelid='public.product_images'::regclass AND attname='feature_vector_ann'""")
+    if cur.fetchone()[0] != "vector(1024)":
+        raise ValueError("feature_vector_ann phải khai báo vector(1024)")
+    return "generated" if column[0] == "ALWAYS" else "writable"
+
+
+def import_catalog(args, catalog):
     from psycopg2.extras import Json
-    connection = psycopg2.connect(os.getenv("MARKETPLACE_AI_DSN") or
-        "dbname=marketplace_mvp user=postgres host=localhost", connect_timeout=5)
+    connection = connect_database()
     added = skipped = removed = 0
     try:
         with connection.cursor() as cur:
@@ -168,14 +198,15 @@ def import_catalog(args, catalog):
                 "order_items": "id,order_id,variant_id,product_name_snapshot,variant_snapshot,unit_price_snapshot,quantity",
                 "orders": "id,order_group_id,shop_id,shipping_address_snapshot,total_amount,order_status",
                 "order_groups": "id,customer_id,total_amount", "users": "id,email,password_hash,full_name,status",
-                "user_interaction_logs": "id,user_id,product_id,action_type",
             }.items():
                 cur.execute(f"SELECT {cols} FROM {table} LIMIT 0")
+            mode = ann_mode(cur)
+            print(f"Cột ANN: {mode}; vector JSON luôn được lưu trong feature_vector.", flush=True)
             cur.execute("SELECT id FROM shops WHERE status='ACTIVE' ORDER BY id FOR SHARE")
             shops = [str(row[0]) for row in cur.fetchall()]
             if not shops:
                 raise ValueError("Cần ít nhất một gian hàng ACTIVE trước khi nạp")
-            if args.clean_demo:
+            if args.replace_demo:
                 # Lock variants too, so concurrent order inserts cannot race this check.
                 cur.execute("""SELECT p.id FROM products p WHERE EXISTS
                     (SELECT 1 FROM product_variants v WHERE v.product_id=p.id AND v.sku LIKE 'DEMO-%')
@@ -225,8 +256,15 @@ def import_catalog(args, catalog):
                            stock_quantity=max(0, int(p.get("stock", 0))) // len(attrs) + (n < int(p.get("stock", 0)) % len(attrs)),
                            status="ACTIVE")
                 for n, (url, vector) in enumerate(images):
+                    extra = {"feature_vector_ann": vector} if mode == "writable" else {}
                     insert(cur, "product_images", id=uid(f"image/{source}/{n}"), product_id=pid,
-                           image_url=url, is_primary=n == 0, feature_vector=vector)
+                           image_url=url, is_primary=n == 0, feature_vector=vector, **extra)
+                    if mode != "absent":
+                        cur.execute("""SELECT feature_vector_ann IS NOT NULL AND
+                            feature_vector_ann = feature_vector::vector(1024)
+                            FROM product_images WHERE id=%s""", (uid(f"image/{source}/{n}"),))
+                        if cur.fetchone()[0] is not True:
+                            raise ValueError("Cột ANN không đồng bộ với vector ảnh; rollback")
                 for n in range(2 + int(p["id"]) % 2):
                     key = f"{source}/{n}"
                     group, order, item = (uid(prefix + key) for prefix in ("group/", "order/", "item/"))
@@ -240,8 +278,6 @@ def import_catalog(args, catalog):
                     insert(cur, "reviews", id=uid("review/" + key), order_item_id=item,
                            customer_id=customers[n], product_id=pid, rating=4 + n % 2,
                            comment="[Đánh giá mô phỏng] " + COMMENTS[n], status="ACTIVE", images=[])
-                    insert(cur, "user_interaction_logs", id=uid("review-event/" + key),
-                           user_id=customers[n], product_id=pid, action_type="REVIEW")
                 added += 1
             cur.execute("""UPDATE products p SET review_count=t.n,rating_avg=t.avg FROM
                 (SELECT p0.id,count(r.id)::int n,coalesce(avg(r.rating),0) avg FROM products p0
@@ -271,7 +307,8 @@ def main():
     parser.add_argument("--webroot", type=Path, default=Path(os.getenv("MARKETPLACE_WEBROOT") or ROOT.parent / "Marketplace.WebAPI/wwwroot"))
     parser.add_argument("--offline", action="store_true", help="Chỉ dùng catalog và ảnh cục bộ")
     parser.add_argument("--refresh", action="store_true", help="Tải lại catalog nguồn")
-    parser.add_argument("--clean-demo", action="store_true", help="Dọn sản phẩm chỉ có SKU DEMO- và chưa có đơn hàng")
+    parser.add_argument("--replace-demo", "--clean-demo", dest="replace_demo", action="store_true",
+                        help="Dọn sản phẩm chỉ có SKU DEMO- và chưa có đơn hàng")
     parser.add_argument("--download-only", action="store_true", help="Chuẩn bị ảnh, kiểm tra vector, không kết nối DB")
     parser.add_argument("--dry-run", action="store_true", help="Thử toàn bộ SQL rồi rollback; vẫn lưu cache/ảnh")
     args = parser.parse_args()

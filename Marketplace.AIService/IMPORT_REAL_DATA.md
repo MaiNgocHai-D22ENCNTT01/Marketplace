@@ -37,6 +37,17 @@ $env:MARKETPLACE_AI_DSN = 'connect_timeout=5'
 
 Nếu đã đặt `MARKETPLACE_AI_DSN` hợp lệ thì bỏ qua đoạn đọc cấu hình. Database phải được migrate bằng WebAPI hiện tại và có ít nhất một shop `ACTIVE`.
 
+Hoặc đặt trực tiếp một trong hai kiểu kết nối sau (thay thông tin minh họa bằng database của bạn):
+
+```powershell
+# PostgreSQL cục bộ:
+$env:MARKETPLACE_AI_DSN = 'host=localhost port=5432 dbname=marketplace_mvp user=postgres password=YOUR_PASSWORD'
+# HOẶC Neon: sao chép connection string từ Neon, giữ sslmode=require.
+$env:MARKETPLACE_AI_DSN = 'postgresql://USER:PASSWORD@YOUR_HOST.neon.tech/DBNAME?sslmode=require'
+```
+
+Mật khẩu trong URL phải được percent-encode nếu chứa ký tự đặc biệt. Script tự yêu cầu TLS với host Neon. Nếu không đặt DSN, có thể dùng các biến `PGHOST`, `PGPORT`, `PGDATABASE`, `PGUSER`, `PGPASSWORD`, `PGSSLMODE` của libpq.
+
 ## 2. Tải và kiểm tra trước khi nạp
 
 ```powershell
@@ -46,7 +57,7 @@ if ($LASTEXITCODE -ne 0) { throw 'Chưa tải đủ ảnh; chạy lại khi có 
 if ($LASTEXITCODE -ne 0) { throw 'Kiểm tra database chưa đạt; chưa nạp dữ liệu.' }
 ```
 
-`--dry-run` thực hiện SQL thật rồi rollback. Cache JSON và ảnh vẫn được lưu. Mỗi ảnh được chuyển thành JPEG thật, xử lý nền trắng và trích xuất lại từ chính file đã lưu bằng `inference.prepare/predict`. Vector phải có 1024 phần tử hữu hạn và chuẩn L2 bằng 1. Cột `feature_vector` là JSON dạng text như AIService hiện tại; cột ANN sinh tự động, nếu đã cài, sẽ tự đồng bộ.
+`--dry-run` thực hiện SQL thật rồi rollback. Cache JSON và ảnh vẫn được lưu. Mỗi ảnh được chuyển thành JPEG thật, xử lý nền trắng và trích xuất lại từ chính file đã lưu bằng `inference.prepare/predict`. Vector phải có 1024 phần tử hữu hạn và chuẩn L2 bằng 1. Cột `feature_vector` là JSON dạng text như AIService hiện tại. Script tự phát hiện `feature_vector_ann`: cột tự sinh do PostgreSQL tính; cột thường `vector(1024)` được ghi cùng vector và kiểm tra đồng bộ. Nếu không có ANN, vẫn lưu vector JSON; không tự thay đổi schema hoặc tạo extension.
 
 ## 3. Nạp dữ liệu: chọn một cách
 
@@ -59,7 +70,7 @@ Giữ toàn bộ sản phẩm cũ (mặc định):
 Hoặc dọn sản phẩm chỉ có SKU `DEMO-%`, chưa từng xuất hiện trong bất kỳ `order_items` nào, rồi nạp:
 
 ```powershell
-& $python .\import_real_data.py --limit 120 --offline --clean-demo
+& $python .\import_real_data.py --limit 120 --offline --replace-demo
 ```
 
 Script khóa sản phẩm/biến thể khi dọn; đơn hàng mọi trạng thái đều được bảo vệ. Các dữ liệu phụ thuộc khai báo cascade của sản phẩm bị dọn (ví dụ giỏ hàng, wishlist) cũng bị xóa theo schema. Nếu gặp tham chiếu cấm xóa như flash sale, cả giao dịch rollback; hãy dùng chế độ giữ cũ hoặc xử lý liên kết đó trước. File ảnh demo cũ không bị xóa. Nếu bật `SeedDemoData`, WebAPI có thể tạo lại bộ demo ở lần khởi động tiếp theo; tắt cấu hình này nếu muốn giữ bộ cũ ở trạng thái đã dọn.
@@ -90,7 +101,14 @@ Chạy WebAPI/WebClient như trước. Không cần gọi reindex vì importer �
 
 ## Kiểm tra đã thực hiện
 
-- Kiểm tra cú pháp hai file Python.
-- Tải thực tế 2 sản phẩm, 6 ảnh từ DummyJSON và trích xuất vector bằng mô hình ONNX cục bộ.
-- Chạy lại hoàn toàn offline, thực hiện SQL trên PostgreSQL hiện tại rồi rollback thành công: 2 sản phẩm cùng biến thể, ảnh, đơn mô phỏng và đánh giá.
-- Chưa commit bộ 120 sản phẩm hoặc chạy báo cáo đầy đủ trên bộ ảnh thật. Không thể bảo đảm mọi mạng/schema/máy triển khai luôn không lỗi; script có kiểm tra trước và rollback để lỗi được báo rõ, không để lại bộ dữ liệu nạp dở.
+- Kiểm tra cú pháp và `--help`.
+- Trích xuất lại 6 ảnh của 2 sản phẩm từ cache hiện có bằng ONNX cục bộ, kiểm tra vector 1024 chiều.
+- Chạy `tests/test_import_real_data.py` trên PostgreSQL 17 tạm riêng, schema từ migration WebAPI: nạp đủ bảng, rollback, chạy lại không trùng, dọn demo chưa có đơn hàng và giữ nguyên sản phẩm có đơn hàng.
+- Kiểm tra pgvector: không có cột ANN, cột ANN thường, cột ANN tự sinh; từ chối cột sai số chiều. Tất cả đạt.
+- Chưa nạp bộ 120 sản phẩm vào database đang dùng; chưa thử kết nối Neon thực tế.
+
+Chạy lại bài kiểm thử (cần PostgreSQL 17, WebAPI đã build Release và cache 2 sản phẩm đầu):
+
+```powershell
+& $python -X utf8 ..\tests\test_import_real_data.py
+```
