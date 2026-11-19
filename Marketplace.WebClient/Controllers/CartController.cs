@@ -11,7 +11,13 @@ public sealed class CartController(ShopApi api) : Controller
     public async Task<IActionResult> Index(CancellationToken ct)
     {
         if (!api.SignedIn) return Login(Url.Action("Index"));
-        try { return View(await api.Get<CartResult>("api/cart", ct)); }
+        try
+        {
+            var cart = await api.Get<CartResult>("api/cart", ct);
+            try { ViewData["Addresses"] = await api.Get<List<Marketplace.Application.Accounts.AddressResult>>("api/account/addresses", ct); }
+            catch (HttpRequestException) { ViewData["AddressWarning"] = "Chưa tải được sổ địa chỉ. Bạn vẫn có thể nhập địa chỉ giao hàng bên dưới."; }
+            return View(cart);
+        }
         catch (HttpRequestException e)
         {
             TempData["Notice"] = e.Message;

@@ -106,7 +106,7 @@ def run():
                                 "--output", str(ROOT / "visual-load-windows.json")], env=env, check=True)
             stop_ai()
             subprocess.run(test, env=env, check=True)
-        for suite in ("test_wishlist.py","test_step3.py","test_web.py","test_flash_sales.py"):
+        for suite in ("test_wishlist.py","test_step3.py","test_web.py","test_flash_sales.py","test_account.py"):
             subprocess.run([sys.executable, str(ROOT / "tests" / suite)], env=env, check=True)
         subprocess.run([pg("psql"), "-h", "127.0.0.1", "-p", str(pg_port), "-U", "postgres", "-d", "postgres",
                         "-v", "ON_ERROR_STOP=1", "-f", "-"], input=(ROOT / "tests/review_totals.sql").read_bytes(),

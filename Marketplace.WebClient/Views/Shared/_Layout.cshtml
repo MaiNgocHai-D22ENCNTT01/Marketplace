@@ -33,6 +33,7 @@
 }
 <details class="user-menu"><summary><i class="bi bi-person-circle"></i><span>Tài khoản</span><i class="bi bi-chevron-down small"></i></summary>
 <div class="menu-list">
+<a asp-controller="Account" asp-action="Profile">Tài khoản của tôi</a>
 <a asp-controller="Wishlists" asp-action="Index">Danh sách yêu thích</a>
 @if (Api.HasRole("CUSTOMER") || Api.HasRole("SELLER")) { <a asp-controller="Chat" asp-action="Index">Tin nhắn</a> }
 @if (!Api.SignedIn || Api.HasRole("CUSTOMER")) { <a asp-controller="Orders" asp-action="Index">Đơn mua</a> }

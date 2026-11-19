@@ -1,0 +1,57 @@
+@model AccountProfileModel
+@{ ViewData["Title"] = "Tài khoản của tôi"; }
+<link rel="stylesheet" href="~/css/account.css" asp-append-version="true" />
+<div class="account-page">
+<aside class="panel account-sidebar">
+<div class="account-identity"><span class="account-avatar">@(string.IsNullOrWhiteSpace(Model.Profile.FullName) ? "?" : System.Globalization.StringInfo.GetNextTextElement(Model.Profile.FullName.Trim()).ToUpperInvariant())</span><div><small>Tài khoản của</small><strong>@Model.Profile.FullName</strong></div></div>
+<nav aria-label="Quản lý tài khoản">
+<a asp-action="Profile" asp-route-tab="profile" class="@(Model.Tab == "profile" ? "active" : "")"><i class="bi bi-person"></i> Hồ sơ của tôi</a>
+<a asp-action="Profile" asp-route-tab="addresses" class="@(Model.Tab == "addresses" ? "active" : "")"><i class="bi bi-geo-alt"></i> Sổ địa chỉ nhận hàng</a>
+<a asp-action="Profile" asp-route-tab="password" class="@(Model.Tab == "password" ? "active" : "")"><i class="bi bi-shield-lock"></i> Đổi mật khẩu</a>
+<a asp-controller="Orders" asp-action="Index"><i class="bi bi-bag"></i> Đơn mua</a>
+<a asp-controller="Wishlists" asp-action="Index"><i class="bi bi-heart"></i> Sản phẩm yêu thích</a>
+</nav></aside>
+<section class="panel account-content">
+@if (TempData["AccountError"] is string error) { <div class="alert alert-danger" role="alert">@error</div> }
+@if (TempData["AccountSuccess"] is string success) { <div class="alert alert-success" role="status">@success</div> }
+@if (Model.Tab == "profile") {
+<h1>Hồ sơ của tôi</h1><p class="text-muted">Quản lý thông tin cá nhân của bạn.</p>
+<form asp-action="UpdateProfile" method="post" class="form-stack account-form">
+<label>Họ tên<input class="form-control" name="FullName" value="@Model.Profile.FullName" required maxlength="255" autocomplete="name" /></label>
+<label>Email<input class="form-control" value="@Model.Profile.Email" readonly type="email" /></label>
+<label>Số điện thoại<input class="form-control" name="PhoneNumber" value="@Model.Profile.PhoneNumber" type="tel" maxlength="20" autocomplete="tel" /></label>
+<div>Vai trò <div class="mt-2">@foreach (var role in Model.Profile.Roles) { <span class="badge text-bg-light me-1">@role</span> }</div></div>
+<p class="text-muted">Ngày tham gia: @Model.Profile.CreatedAt.ToString("dd/MM/yyyy")</p>
+<button class="btn btn-primary">Lưu thay đổi</button></form>
+}
+else if (Model.Tab == "addresses") {
+<div class="account-heading"><h1>Sổ địa chỉ nhận hàng</h1><button type="button" id="add-address" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Thêm địa chỉ</button></div>
+@if (Model.Addresses.Count == 0) { <p class="empty">Bạn chưa có địa chỉ nhận hàng. Hãy thêm địa chỉ đầu tiên.</p> }
+@foreach (var address in Model.Addresses) {
+<article class="address-card"><div class="account-heading"><strong>@address.RecipientName</strong>@if (address.IsDefault) { <span class="badge text-bg-success">Mặc định</span> }</div>
+<p>@address.Phone</p><p>@address.FullAddress</p><div class="address-actions">
+@if (!address.IsDefault) { <form asp-action="SetDefault" method="post"><input type="hidden" name="id" value="@address.Id" /><button class="btn btn-outline-primary btn-sm">Đặt làm mặc định</button></form> }
+<form asp-action="DeleteAddress" method="post" data-delete-address><input type="hidden" name="id" value="@address.Id" /><button class="btn btn-outline-danger btn-sm">Xóa</button></form>
+</div></article>
+}
+<dialog id="address-dialog" aria-labelledby="address-title"><div class="account-heading"><h2 id="address-title">Thêm địa chỉ nhận hàng</h2><button type="button" id="close-address" class="btn btn-light" aria-label="Đóng">×</button></div>
+<form asp-action="AddAddress" method="post" class="form-stack">
+<label>Họ tên người nhận<input class="form-control" name="RecipientName" required maxlength="150" autocomplete="name" /></label>
+<label>Số điện thoại<input class="form-control" name="Phone" type="tel" required maxlength="20" autocomplete="tel" /></label>
+<label>Tỉnh/Thành phố<input class="form-control" name="Province" required maxlength="100" /></label>
+<label>Quận/Huyện<input class="form-control" name="District" required maxlength="100" /></label>
+<label>Phường/Xã<input class="form-control" name="Ward" required maxlength="100" /></label>
+<label>Địa chỉ chi tiết<textarea class="form-control" name="DetailAddress" required maxlength="190" autocomplete="street-address"></textarea></label>
+<label><input type="checkbox" name="IsDefault" value="true" /> Đặt làm địa chỉ mặc định</label>
+<button class="btn btn-primary">Lưu địa chỉ</button></form></dialog>
+}
+else {
+<h1>Đổi mật khẩu</h1><p class="text-muted">Mật khẩu mới từ 8 đến 128 ký tự.</p>
+<form asp-action="ChangePassword" method="post" class="form-stack account-form" id="password-form">
+<label>Mật khẩu hiện tại<input class="form-control" name="CurrentPassword" type="password" required maxlength="128" autocomplete="current-password" /></label>
+<label>Mật khẩu mới<input class="form-control" name="NewPassword" type="password" required minlength="8" maxlength="128" autocomplete="new-password" /></label>
+<label>Xác nhận mật khẩu mới<input class="form-control" name="ConfirmPassword" type="password" required minlength="8" maxlength="128" autocomplete="new-password" /></label>
+<button class="btn btn-primary">Cập nhật mật khẩu</button></form>
+}
+</section></div>
+@section Scripts { <script src="~/js/account.js" asp-append-version="true" defer></script> }
