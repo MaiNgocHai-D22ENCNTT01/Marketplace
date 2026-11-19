@@ -1,0 +1,17 @@
+@model ReviewPage
+@{ViewData["Title"] = "Quản lý Đánh giá";}
+<h1>Quản lý Đánh giá</h1>
+<nav class="nav nav-tabs"><a class="nav-link" asp-action="Index">Tổng quan</a><a class="nav-link active" asp-action="Reviews">Quản lý Đánh giá</a></nav>
+@if (Model.Total == 0) { <p>Gian hàng chưa có đánh giá.</p> }
+@foreach (var review in Model.Items) {
+<section class="panel my-3"><h2 class="h5">@review.ProductName</h2><partial name="_ReviewRow" model="review" />
+<details><summary>@(review.SellerReply is null ? "Trả lời" : "Sửa phản hồi")</summary>
+<form asp-action="Reply" asp-route-id="@review.Id" method="post">
+<input type="hidden" name="page" value="@Model.Page"/>
+<label class="d-block">Phản hồi<textarea class="form-control" name="reply" maxlength="2000" required>@review.SellerReply</textarea></label>
+<button class="btn btn-primary mt-2">Lưu phản hồi</button></form></details></section>
+}
+<nav aria-label="Trang đánh giá">
+@if(Model.Page > 1) { <a asp-action="Reviews" asp-route-page="@(Model.Page-1)">Trang trước</a> }
+@if((long)Model.Page * Model.PageSize < Model.Total) { <a asp-action="Reviews" asp-route-page="@(Model.Page+1)">Trang sau</a> }
+</nav>

@@ -1,0 +1,14 @@
+@model ReviewRow
+@inject IConfiguration Config
+<article class="review-row">
+    <header><span class="review-avatar" aria-hidden="true">@(string.IsNullOrWhiteSpace(Model.Buyer) ? "?" : System.Globalization.StringInfo.GetNextTextElement(Model.Buyer.Trim()).ToUpperInvariant())</span><strong>@Model.Buyer</strong> · <time>@Model.CreatedAt.ToString("dd/MM/yyyy")</time></header>
+    <span class="review-score" aria-label="@Model.Rating sao">@(new string('★', Model.Rating))@(new string('☆', 5-Model.Rating))</span>
+    @if (!string.IsNullOrWhiteSpace(Model.Comment)) { <p>@Model.Comment</p> }
+    @if (Model.Images.Length > 0) {
+        <div class="review-images">@foreach (var image in Model.Images) {
+            var src = image.StartsWith("/images/demo/", StringComparison.Ordinal) ? new Uri(new Uri(Config["ApiBaseUrl"]!), image).AbsoluteUri : image;
+            <img src="@src" loading="lazy" alt="Ảnh trong đánh giá của @Model.Buyer" referrerpolicy="no-referrer" />
+        }</div>
+    }
+    @if (Model.SellerReply is not null) { <blockquote><strong>Phản hồi của Người bán</strong><p>@Model.SellerReply</p></blockquote> }
+</article>

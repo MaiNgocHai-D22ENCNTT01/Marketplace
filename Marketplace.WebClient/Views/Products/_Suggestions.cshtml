@@ -1,0 +1,10 @@
+@model List<Marketplace.Application.Catalog.ProductSummary>
+@inject IConfiguration Configuration
+@foreach (var p in Model)
+{
+    <a asp-controller="Products" asp-action="Detail" asp-route-id="@p.Id" asp-route-clicked="true">
+        @if (p.ImageUrl != null && Uri.TryCreate(new Uri(Configuration["ApiBaseUrl"]!), p.ImageUrl, out var img) && img.Scheme is "http" or "https")
+        { <img src="@img" alt="" /> } else { <i class="bi bi-image"></i> }
+        <span><strong>@p.Name</strong><small>@p.Category · @p.Price.ToString("N0", System.Globalization.CultureInfo.GetCultureInfo("vi-VN")) ₫</small></span>
+    </a>
+}

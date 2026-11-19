@@ -1,0 +1,16 @@
+@model Marketplace.Application.Catalog.ProductSummary
+@inject IConfiguration Configuration
+@{
+    var src = !string.IsNullOrWhiteSpace(Model.ImageUrl) && Uri.TryCreate(new Uri(Configuration["ApiBaseUrl"]!), Model.ImageUrl, out var uri) && uri.Scheme is "http" or "https" ? uri.AbsoluteUri : null;
+    var price = Model.Price.ToString("N0", System.Globalization.CultureInfo.GetCultureInfo("vi-VN")) + " ₫";
+}
+<article class="product-card"><div class="product-photo">
+<a asp-controller="Products" asp-action="Detail" asp-route-id="@Model.Id" asp-route-clicked="true" aria-label="@Model.Name">
+@if (src != null) { <img loading="lazy" src="@src" alt="" /> }
+else { <i class="bi bi-image"></i> }</a>
+@if (ViewData["Similarity"] is string similarity) { <span class="match" title="@similarity% Giống nhau"><i class="bi bi-stars"></i> Độ giống @similarity%</span> }
+<partial name="_WishlistHeart" model="Model.Id" />
+<button type="button" class="quick" aria-label="Xem nhanh @Model.Name" title="Xem nhanh"><i class="bi bi-eye"></i></button></div>
+<div class="product-info"><small>@Model.Category</small><h3><a asp-controller="Products" asp-action="Detail" asp-route-id="@Model.Id" asp-route-clicked="true">@Model.Name</a></h3>
+<strong class="price">@price</strong><div class="product-meta"><span ><i class="bi bi-star"></i> @(Model.ReviewCount == 0 ? "Chưa có đánh giá" : $"{Model.RatingAvg:0.0} ({Model.ReviewCount})")</span><a asp-controller="Shops" asp-action="Detail" asp-route-id="@Model.ShopId" title="Xem Shop @Model.ShopName"><i class="bi bi-shop"></i> @Model.ShopName</a></div></div></article>
+

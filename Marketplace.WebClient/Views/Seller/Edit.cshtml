@@ -1,0 +1,34 @@
+@model ProductForm
+@{ ViewData["Title"] = Model.Id.HasValue ? "Sửa sản phẩm" : "Đăng sản phẩm"; }
+<section class="panel edit-form"><h1>@ViewData["Title"]</h1>
+<form method="post" asp-action="Save" asp-route-id="@Model.Id" class="d-grid gap-3">
+<div asp-validation-summary="All" class="text-danger"></div>
+<label>Tên sản phẩm<input asp-for="Product.Name" class="form-control" required /></label>
+<label>Danh mục<select asp-for="Product.CategoryId" class="form-select">@foreach (var c in Model.Categories) { <option value="@c.Id">@c.Name</option> }</select></label>
+<label>Mô tả<textarea asp-for="Product.Description" class="form-control"></textarea></label>
+<label>Ảnh minh họa<select asp-for="Product.ImageUrl" class="form-select">
+@foreach (var file in new[] { Model.Product.ImageUrl, "/images/demo/tee-mint.png","/images/demo/cup-sand.png","/images/demo/mouse-navy.png","/images/demo/book-sky.png","/images/demo/tote-rose.png","/images/demo/mat-olive.png" }.Distinct()) { <option value="@file">@System.IO.Path.GetFileNameWithoutExtension(file)</option> }
+</select></label>
+<h2>Biến thể</h2><div id="variants">
+@for (int i = 0; i < Model.Product.Variants.Count; i++) {
+<div class="row mb-2"><input type="hidden" asp-for="Product.Variants[i].Id" />
+<label class="col">SKU<input asp-for="Product.Variants[i].Sku" required class="form-control"/></label>
+<label class="col">Giá (₫)<input asp-for="Product.Variants[i].Price" type="number" min="0.01" step="0.01" required class="form-control"/></label>
+<label class="col">Tồn kho<input asp-for="Product.Variants[i].StockQuantity" min="0" required class="form-control"/></label></div>
+}
+</div><button type="button" id="add" class="btn btn-outline-secondary">Thêm biến thể</button>
+<button class="btn btn-primary">Lưu sản phẩm</button></form></section>
+@section Scripts {
+<script>
+document.getElementById('add').onclick = () => {
+ const list = document.getElementById('variants');
+ const row = list.firstElementChild.cloneNode(true);
+ row.querySelectorAll('input').forEach(field => {
+   field.name = field.name.replace(/\[\d+\]/, '[' + list.children.length + ']');
+   field.removeAttribute('id');
+   field.value = '';
+ });
+ list.appendChild(row);
+};
+</script>
+}

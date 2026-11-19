@@ -1,0 +1,37 @@
+@model IReadOnlyList<Marketplace.Application.Catalog.ProductSummary>
+@using Marketplace.Application.Catalog
+@{
+    ViewData["Title"] = "Khám phá sản phẩm";
+    var q = Context.Request.Query;
+    var department = q["industry"].ToString();
+    var categories = Model.Select(p => p.Category).Distinct().OrderBy(c => c).ToList();
+    var items = Model.Where(p => department.Length == 0 || p.Category == department).ToList();
+    var icons = new Dictionary<string,string> { ["Thời trang"]="handbag", ["Điện tử"]="headphones", ["Gia dụng"]="cup-hot", ["Phụ kiện"]="backpack", ["Thể thao"]="bicycle", ["Văn phòng phẩm"]="journal-bookmark" };
+}
+@if (!q.Any()) {
+<section class="hero"><div class="hero-copy"><span class="hero-label"><i class="bi bi-camera"></i> TÌM KIẾM HÌNH ẢNH AI</span>
+<h1>Thấy món ưng ý?<br/><em>Tìm ngay bằng ảnh.</em></h1><p>Tải ảnh để khám phá sản phẩm tương tự và nhận gợi ý dành riêng cho bạn.</p>
+<button class="hero-action" data-visual><i class="bi bi-camera"></i> Tìm bằng hình ảnh <i class="bi bi-arrow-up-right"></i></button></div>
+<div class="hero-art" aria-hidden="true"><div class="orbit"></div><div class="shot shot-back"><img src="~/images/hero-tote.png" alt=""/></div><div class="shot shot-main"><img src="~/images/hero-headphones.png" alt=""/><div class="scan-box"></div></div><div class="scan-label"><i class="bi bi-stars"></i> Tìm sản phẩm tương tự</div></div></section>
+}
+@if (!q.Any()) {
+<link rel="stylesheet" href="~/css/flash-sale.css" asp-append-version="true" />
+<div data-flash-url="@Url.Action("Current","FlashSales")">@await Component.InvokeAsync("FlashSale")</div>
+<script defer src="~/js/flash-sale.js" asp-append-version="true"></script>
+}
+@if (categories.Count > 0) {
+<nav class="category-bar" aria-label="Danh mục ngành hàng"><a class="@(department == "" ? "chosen" : "")" asp-action="Index" asp-route-keyword="@q["keyword"]" asp-route-categoryId="@q["categoryId"]" asp-route-sort="@q["sort"]" asp-fragment="catalog"><i class="bi bi-grid"></i> Tất cả</a>
+@foreach (var category in categories) { <a class="@(department == category ? "chosen" : "")" asp-action="Index" asp-route-keyword="@q["keyword"]" asp-route-categoryId="@q["categoryId"]" asp-route-sort="@q["sort"]" asp-route-industry="@category" asp-fragment="catalog"><i class="bi bi-@(icons.GetValueOrDefault(category,"tag"))"></i> @category</a> }</nav> }
+@if (ViewBag.ApiReady != false && !q.Any()) {
+<section class="collection"><h2>Gợi ý dành riêng cho bạn <span class="ai-tag"><i class="bi bi-stars"></i> AI</span></h2>
+@await Component.InvokeAsync("Recommendations", new { productId = (Guid?)null })</section> }
+<section id="catalog" class="collection"><div class="section-head"><div>
+@if (q.Any()) { <h1>@(department.Length > 0 ? department : string.IsNullOrWhiteSpace(q["keyword"]) ? "Danh sách sản phẩm" : $"Kết quả cho “{q["keyword"]}”")</h1> } else { <h2>Khám phá sản phẩm</h2> }
+@if (ViewBag.ApiReady != false) { <small>@items.Count sản phẩm</small> }</div>
+<form method="get" class="sort-form"><input type="hidden" name="keyword" value="@q["keyword"]"/>
+@if (department.Length > 0) { <input type="hidden" name="industry" value="@department"/> }
+@if (q.ContainsKey("categoryId")) { <input type="hidden" name="categoryId" value="@q["categoryId"]"/> }
+<select name="sort" aria-label="Sắp xếp sản phẩm" class="form-select"><option value="">Tên sản phẩm</option><option value="price_asc" selected="@(q["sort"] == "price_asc")">Giá tăng dần</option><option value="price_desc" selected="@(q["sort"] == "price_desc")">Giá giảm dần</option></select><button class="btn btn-outline-primary">Áp dụng</button></form></div>
+@if (ViewBag.ApiReady == false) { <p class="empty">Chưa kết nối được danh mục sản phẩm. Vui lòng thử lại sau.</p> }
+else if (items.Count == 0) { <p class="empty">Chưa tìm thấy sản phẩm. <a asp-action="Index">Xem tất cả sản phẩm</a></p> }
+else { <div class="product-grid">@foreach (var item in items) { <partial name="_ProductCard" model="item" /> }</div> }</section>

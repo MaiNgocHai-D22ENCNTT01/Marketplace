@@ -1,0 +1,34 @@
+@using Marketplace.Application.Catalog
+@inject IConfiguration Configuration
+@{
+    ViewData["Title"] = "Tin nhắn";
+    var product = ViewData["Product"] as ProductSummary;
+    var service = Configuration["ChatPublicApiUrl"] ?? Configuration["ApiBaseUrl"];
+}
+<link rel="stylesheet" href="~/css/chat.css" asp-append-version="true" />
+<h1>Tin nhắn</h1>
+<div id="chat" data-api="@service" data-token="@Url.Action("Token")" data-detail="@Url.Action("Detail", "Products")"
+     data-shop="@ViewData["ShopId"]" data-shop-name="@ViewData["ShopName"]" data-product="@product?.Id">
+    <aside aria-label="Danh sách cuộc hội thoại"><h2>Hội thoại</h2><div id="threads"></div></aside>
+    <section aria-labelledby="peer">
+        <header><h2 id="peer">Chọn cuộc hội thoại</h2><small id="connection" role="status"></small></header>
+        <button id="older" type="button" hidden>Xem tin cũ hơn</button>
+        <div id="messages" aria-label="Lịch sử tin nhắn"></div>
+        <form id="compose" hidden>
+            @Html.AntiForgeryToken()
+            @if (product is not null)
+            {
+                <div id="attachment"><i class="bi bi-bag"></i> @product.Name · @product.Price.ToString("N0") ₫
+                    <button type="button" id="detach" aria-label="Gỡ sản phẩm đính kèm">×</button>
+                </div>
+            }
+            <div class="chat-entry"><textarea id="content" aria-label="Nội dung tin nhắn" placeholder="Nhập tin nhắn…" maxlength="4000" rows="2"></textarea>
+            <button id="send" type="submit" class="btn btn-primary">Gửi</button></div>
+        </form>
+        <p id="chat-error" role="alert"></p>
+    </section>
+</div>
+@section Scripts {
+    <script defer src="~/lib/signalr/signalr.min.js" asp-append-version="true"></script>
+    <script defer src="~/js/chat.js" asp-append-version="true"></script>
+}

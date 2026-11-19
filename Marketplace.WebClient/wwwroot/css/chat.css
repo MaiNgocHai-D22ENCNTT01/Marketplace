@@ -1,0 +1,22 @@
+#chat { display:grid; grid-template-columns:minmax(13rem,30%) minmax(0,1fr); border:1px solid var(--edge,#ddd); background:white; border-radius:1rem; overflow:hidden }
+#chat h2 { font-size:1.15rem; margin:0 }
+#chat aside { border-right:1px solid #dedbe4; overflow:auto; max-height:75vh }
+#chat aside h2,#chat section header { padding:1rem; border-bottom:1px solid #eee }
+#threads button { display:grid; text-align:left; width:100%; background:white; color:inherit; border:0; padding:.75rem 1rem }
+#threads button[aria-current=true] { background:#f1ebff }
+#threads small { overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
+#chat section { min-width:0; display:flex; flex-direction:column }
+#messages { height:46vh; min-height:12rem; overflow:auto; display:flex; flex-direction:column; gap:.6rem; padding:1rem }
+#messages article { align-self:flex-start; max-width:84%; background:#f1eff4; border-radius:.8rem; padding:.55rem .8rem; overflow-wrap:anywhere }
+#messages article.mine { align-self:flex-end; background:#e8dfff }
+#messages p { margin:0; white-space:pre-wrap }
+#messages time { display:block; font-size:.72rem; color:#575460 }
+#messages a { display:flex; align-items:center; padding:.4rem; gap:.5rem; background:white; border-radius:.4rem }
+#messages img { width:3rem; height:3rem; object-fit:cover }
+#compose { padding:.7rem; border-top:1px solid #eee }
+.chat-entry { display:flex; gap:.5rem }
+#content { flex:1; min-width:0; border:1px solid #ccc; border-radius:.5rem; padding:.5rem }
+#chat-error { color:#902039; margin:0 .8rem }
+#attachment { padding:.4rem }
+#detach,#older { border:0; color:#483775; background:#f6f3fa }
+@media(max-width:640px){ #chat { grid-template-columns:minmax(0,1fr) } #chat aside { max-height:10rem; border:0; border-bottom:1px solid #ddd } }

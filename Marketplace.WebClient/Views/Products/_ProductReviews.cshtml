@@ -1,0 +1,29 @@
+@model ProductReviews
+@{ var id = ViewData["ProductId"]; var stars = (int?)ViewData["Rating"]; var photos = (bool)ViewData["WithImages"]!; var withComment = (bool)ViewData["WithComment"]!; var rows = Model.Results; }
+<section id="reviews" class="collection panel">
+<h2>Đánh giá của khách hàng</h2>
+<div class="review-summary">
+<div><strong class="display-6">@Model.RatingAvg.ToString("0.0") / 5.0</strong><p>@Model.ReviewCount lượt đánh giá</p></div>
+<div>@for (int i = 5; i >= 1; i--) {
+    var pct = Model.ReviewCount == 0 ? 0 : (int)Math.Round(100.0 * Model.StarCounts[i-1] / Model.ReviewCount);
+    <div class="review-bar"><span>@i sao</span><progress max="100" value="@pct" aria-label="Tỷ lệ @i sao"></progress><small>@pct%</small></div>
+}</div></div>
+<nav class="review-presets" aria-label="Lọc nhanh đánh giá">
+    <a asp-action="Detail" asp-route-id="@id" asp-fragment="reviews" aria-current="@(stars is null && !photos && !withComment ? "true" : null)">Tất cả</a>
+    @foreach (var level in new[] { 5, 4 }) {
+        <a asp-action="Detail" asp-route-id="@id" asp-route-rating="@level" asp-fragment="reviews" aria-current="@(stars == level && !photos && !withComment ? "true" : null)">@level sao</a>
+    }
+    <a asp-action="Detail" asp-route-id="@id" asp-route-withComment="true" asp-fragment="reviews" aria-current="@(stars is null && !photos && withComment ? "true" : null)">Có bình luận chữ</a>
+</nav>
+<form asp-action="Detail" asp-route-id="@id" asp-fragment="reviews" method="get" class="my-3">
+    <label>Số sao <select name="rating"><option value="">Tất cả</option>@for(int i=5;i>=1;i--) { <option value="@i" selected="@(stars == i)">@i sao</option> }</select></label>
+    <label><input type="checkbox" name="withImages" value="true" checked="@photos" /> Có hình ảnh</label>
+    <label><input type="checkbox" name="withComment" value="true" checked="@withComment" /> Có bình luận chữ</label>
+    <button class="btn btn-outline-primary btn-sm">Lọc đánh giá</button>
+</form>
+@if (rows.Items.Count == 0) { <p>Chưa có đánh giá phù hợp.</p> }
+@foreach (var review in rows.Items) { <partial name="_ReviewRow" model="review" /> }
+<nav aria-label="Trang đánh giá">
+@if (rows.Page > 1) { <a asp-route-id="@id" asp-action="Detail" asp-route-page="@(rows.Page-1)" asp-route-rating="@stars" asp-route-withImages="@photos" asp-route-withComment="@withComment" asp-fragment="reviews">Trang trước</a> }
+@if ((long)rows.Page * rows.PageSize < rows.Total) { <a asp-route-id="@id" asp-action="Detail" asp-route-page="@(rows.Page+1)" asp-route-rating="@stars" asp-route-withImages="@photos" asp-route-withComment="@withComment" asp-fragment="reviews">Trang sau</a> }
+</nav></section>

@@ -1,0 +1,33 @@
+services:
+  ai:
+    build: ./Marketplace.AIService
+    environment:
+      PORT: 8000
+      MARKETPLACE_INFERENCE_ONLY: "false"
+      MARKETPLACE_REQUIRE_API_KEY: "false"
+      MARKETPLACE_AI_DSN: ${MARKETPLACE_AI_DSN:?Set the PostgreSQL DSN for the AI containers}
+      MARKETPLACE_WEBROOT: /catalog
+      MARKETPLACE_AI_THREADS: ${MARKETPLACE_AI_THREADS:-2}
+      MARKETPLACE_DB_CONNECTIONS: ${MARKETPLACE_DB_CONNECTIONS:-16}
+      MARKETPLACE_AI_QUEUE: ${MARKETPLACE_AI_QUEUE:-128}
+      MARKETPLACE_AI_BATCH_SIZE: ${MARKETPLACE_AI_BATCH_SIZE:-32}
+      MARKETPLACE_AI_BATCH_MS: ${MARKETPLACE_AI_BATCH_MS:-12}
+    volumes:
+      - ./Marketplace.WebAPI/wwwroot:/catalog:ro
+    deploy:
+      replicas: 2
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/ready', timeout=2)"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+      start_period: 90s
+  nginx:
+    image: nginx:1.28-alpine
+    depends_on:
+      ai:
+        condition: service_healthy
+    volumes:
+      - ./nginx-ai.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - "127.0.0.1:8000:8000"

@@ -1,0 +1,64 @@
+@inject Marketplace.WebClient.Services.ShopApi Api
+@{
+    long? count = 0;
+    if (Api.HasRole("CUSTOMER"))
+    {
+        try { count = (await Api.Get<CartResult>("api/cart", Context.RequestAborted)).Quantity; }
+        catch (HttpRequestException) { count = null; }
+    }
+}
+<!DOCTYPE html>
+<html lang="vi"><head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>@ViewData["Title"] · Marketplace</title>
+<link rel="icon" href="~/brand.svg" type="image/svg+xml" />
+<link rel="stylesheet" href="~/lib/bootstrap-5.3.3/bootstrap.min.css" />
+<link rel="stylesheet" href="~/lib/bootstrap-icons/bootstrap-icons.min.css" />
+<link rel="preload" href="~/lib/inter/Inter.ttf" as="font" type="font/ttf" crossorigin />
+<link rel="stylesheet" href="~/css/marketplace-modern.css" asp-append-version="true" />
+<link rel="stylesheet" href="~/css/reviews.css" asp-append-version="true" />
+<link rel="stylesheet" href="~/css/wishlist-search.css" asp-append-version="true" />
+</head><body>
+<a class="visually-hidden-focusable" href="#main">Đến nội dung chính</a>
+<header class="sticky-top mast"><nav class="container mast-inner" aria-label="Điều hướng chính">
+<a class="brand" asp-controller="Home" asp-action="Index"><img src="~/brand.svg" alt="" width="35" height="35"/>Marketplace</a>
+<form class="search" asp-controller="Home" asp-action="Index" method="get">
+<button aria-label="Tìm kiếm" class="bare"><i class="bi bi-search"></i></button>
+<input id="header-keyword" autocomplete="off" role="combobox" aria-haspopup="dialog" aria-expanded="false" aria-controls="search-suggestions" type="search" name="keyword" aria-label="Từ khóa" placeholder="Tìm sản phẩm bạn yêu thích…" value="@Context.Request.Query["keyword"]" />
+<button type="button" id="visual-open" data-visual class="camera" aria-label="Tìm kiếm bằng hình ảnh"><i class="bi bi-camera"></i> AI</button>
+<div id="search-suggestions" role="dialog" aria-label="Gợi ý sản phẩm" data-url="@Url.Action("Suggestions", "Products")" hidden></div></form>
+<div class="account-nav">
+@if (!Api.SignedIn || Api.HasRole("CUSTOMER")) {
+<a class="basket" asp-controller="Cart" asp-action="Index" aria-label="Giỏ hàng, @(count?.ToString() ?? "chưa rõ số lượng") sản phẩm"><i class="bi bi-bag"></i><b>@(count?.ToString() ?? "–")</b></a>
+}
+<details class="user-menu"><summary><i class="bi bi-person-circle"></i><span>Tài khoản</span><i class="bi bi-chevron-down small"></i></summary>
+<div class="menu-list">
+<a asp-controller="Wishlists" asp-action="Index">Danh sách yêu thích</a>
+@if (Api.HasRole("CUSTOMER") || Api.HasRole("SELLER")) { <a asp-controller="Chat" asp-action="Index">Tin nhắn</a> }
+@if (!Api.SignedIn || Api.HasRole("CUSTOMER")) { <a asp-controller="Orders" asp-action="Index">Đơn mua</a> }
+@if (Api.HasRole("SELLER")) { <a asp-controller="Seller" asp-action="Index">Kênh người bán</a> }
+@if (Api.HasRole("ADMIN") || Api.HasRole("SUPER_ADMIN")) { <a asp-controller="Admin" asp-action="Index">Quản trị</a> }
+@if (Api.SignedIn) { <form asp-controller="Account" asp-action="Logout" method="post"><button>Đăng xuất</button></form> }
+else { <a asp-controller="Account" asp-action="Login">Đăng nhập</a><a asp-controller="Account" asp-action="Register">Đăng ký</a> }
+</div></details></div></nav></header>
+<main id="main" class="container page">
+@if (TempData["Notice"] is string notice) { <div class="alert alert-info" role="status">@notice</div> }
+@RenderBody()</main>
+<footer><div class="container foot-grid"><div><a class="brand" asp-controller="Home" asp-action="Index"><img src="~/brand.svg" alt="" width="32" height="32"/>Marketplace</a><p>Sàn mua sắm từ các gian hàng độc lập.</p></div>
+<div><h2>Hỗ trợ mua sắm</h2><a asp-controller="Orders" asp-action="Index">Theo dõi đơn mua</a><a asp-controller="Home" asp-action="Privacy">Chính sách &amp; hướng dẫn</a></div>
+<div><h2>Công nghệ AI</h2><button class="bare" data-visual>Tìm kiếm bằng hình ảnh</button><p>Khám phá sản phẩm tương tự và gợi ý cá nhân hóa.</p></div></div></footer>
+<dialog id="visual-dialog" aria-labelledby="visual-title"><button type="button" class="close-dialog" data-close aria-label="Đóng">×</button>
+<i class="bi bi-camera feature-icon"></i><h2 id="visual-title">Tìm bằng hình ảnh</h2>
+<form asp-controller="Products" asp-action="Visual" method="post" enctype="multipart/form-data">
+<label class="drop-zone"><i class="bi bi-cloud-arrow-up"></i><strong>Kéo thả hoặc chọn ảnh</strong><small>JPG, PNG, WEBP · Tối đa 10 MiB</small>
+<input type="file" accept="image/jpeg,image/png,image/webp" name="file" required /></label>
+<img class="preview" hidden alt="Ảnh xem trước" /><p class="upload-error text-danger" role="alert"></p>
+<div hidden class="analysis-state" role="status">Đang phân tích ảnh…<progress aria-label="Đang phân tích"></progress></div>
+<button class="btn btn-primary w-100"><i class="bi bi-stars"></i> Tìm sản phẩm tương tự</button>
+</form></dialog>
+<dialog id="quick-dialog" aria-labelledby="quick-title"><button class="close-dialog" data-close aria-label="Đóng">×</button><img hidden class="quick-image" alt=""/><small class="quick-category"></small><h2 id="quick-title"></h2><p class="price"></p><a class="btn btn-primary">Xem chi tiết &amp; gian hàng</a></dialog>
+<script defer src="~/js/visual-search.js" asp-append-version="true"></script>
+<script defer src="~/js/wishlist.js" asp-append-version="true"></script>
+<script defer src="~/js/suggestions.js" asp-append-version="true"></script>
+@await RenderSectionAsync("Scripts", required: false)
+</body></html>

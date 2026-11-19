@@ -1,0 +1,43 @@
+@model List<PurchasedOrder>
+@{ ViewData["Title"] = "Đơn mua"; }
+<h1>Đơn mua</h1>
+@inject Marketplace.WebClient.Services.ShopApi Api
+@if (!Api.HasRole("SELLER")) {
+<details class="mb-3"><summary>Đăng ký mở gian hàng</summary>
+<form method="post" asp-action="RegisterShop" class="my-2"><label>Tên gian hàng <input class="form-control" name="name" maxlength="150" required /></label>
+<label>Mô tả <input class="form-control" name="description" maxlength="2000"/></label><button class="btn btn-outline-primary">Gửi yêu cầu</button></form></details>
+}
+@if (Model.Count == 0) { <p class="empty">Bạn chưa có đơn hàng. <a asp-controller="Home" asp-action="Index">Khám phá sản phẩm</a></p> }
+@foreach (var group in Model.GroupBy(o => o.OrderGroupId))
+{
+    <section class="mb-4">
+        <h2 class="h5">Nhóm đơn @group.Key</h2>
+        @foreach (var order in group)
+        {
+            <article class="order-card">
+                <h3 class="h5"><i class="bi bi-shop"></i> @order.Shop.Name</h3>
+                <a class="btn btn-outline-primary" asp-controller="Chat" asp-action="Index" asp-route-shopId="@order.Shop.Id" asp-route-shopName="@order.Shop.Name">Chat với Shop</a>
+                <p>Đơn @order.Id · @order.CreatedAt.ToString("dd/MM/yyyy HH:mm") · <span class="status" data-status="@order.Status">@order.Status</span></p>
+                <ul>@foreach (var item in order.Items)
+                {
+                    <li>@item.ProductName · @item.Variant.GetProperty("sku").GetString() ·
+                        @string.Join(" · ", item.Variant.GetProperty("attributes").EnumerateObject().Select(p => p.Value.ToString()))
+                        · @item.UnitPrice.ToString("N0") ₫ × @item.Quantity
+                        @if (order.Status == "COMPLETED" && !item.Reviewed)
+                        {
+                            <button type="button" class="btn btn-outline-primary" data-review-item="@item.OrderItemId" data-product-name="@item.ProductName">Đánh giá</button>
+                        }
+                        @if (item.Reviewed) { <span> · Đã đánh giá</span> }
+                    </li>
+                }</ul>
+                <p>@order.ShippingAddress.RecipientName · @order.ShippingAddress.Phone · @order.ShippingAddress.DetailAddress</p>
+                <strong>@order.Total.ToString("N0") ₫</strong>
+                @if (order.Status == "PENDING") { <form method="post" asp-action="Cancel" asp-route-id="@order.Id"><button class="btn btn-outline-danger">Hủy đơn</button></form> }
+                @if (order.Status is "SHIPPING" or "DELIVERED") { <form method="post" asp-action="Confirm" asp-route-id="@order.Id"><button class="btn btn-primary">Xác nhận nhận hàng</button></form> }
+            </article>
+        }
+    </section>
+}
+
+<partial name="_ReviewDialog" />
+@section Scripts { <script defer src="~/js/review-form.js" asp-append-version="true"></script> }

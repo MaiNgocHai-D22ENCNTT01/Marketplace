@@ -1,0 +1,14 @@
+**/bin/
+**/obj/
+**/.venv/
+**/__pycache__/
+.vs/
+.build-check/
+run-logs/
+.env
+.env.*
+!.env.scaling.example
+**/secrets.json
+**/*.user
+**/*.log
+**/*.dump

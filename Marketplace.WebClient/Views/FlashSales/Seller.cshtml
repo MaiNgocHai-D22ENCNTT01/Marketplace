@@ -1,0 +1,20 @@
+@model SellerSalesPage
+@{ ViewData["Title"]="Đăng ký Flash Sale"; }
+<nav class="crumb"><a asp-controller="Seller" asp-action="Index">Kênh người bán</a> / Flash Sale</nav><h1>Flash Sale của gian hàng</h1>
+<section class="panel"><h2>Đăng ký suất bán</h2>
+@if (Model.Campaigns.Count == 0) { <p>Chưa có khung giờ sắp diễn ra để đăng ký.</p> }
+else { <form asp-action="Register" method="post" class="form-stack">
+<label>Khung giờ<select name="campaignId" class="form-select" required>@foreach (var c in Model.Campaigns) {
+<option value="@c.Id">@c.Title · @c.StartTime.AddHours(7).ToString("dd/MM HH:mm") – @c.EndTime.AddHours(7).ToString("dd/MM HH:mm") (GMT+7)</option>
+}</select></label>
+<label>Biến thể<select class="form-select" name="variantId" required>@foreach (var p in Model.Products.Where(p => p.Status == "ACTIVE")) {
+@foreach (var v in p.Data.Variants.Where(v => v.StockQuantity > 0)) { <option value="@v.Id">@p.Data.Name · @v.Sku · @v.Price.ToString("N0") ₫ · tồn @v.StockQuantity</option> }
+}</select></label>
+<label>Giá Flash Sale (₫)<input type="number" class="form-control" name="flashPrice" min="0.01" step=".01" required /></label>
+<label>Tổng số suất<input type="number" class="form-control" name="totalQuota" min="1" required /></label>
+<label>Tối đa mỗi khách<input type="number" class="form-control" name="maxPerUser" min="1" value="2" required /></label>
+<button class="btn btn-primary">Gửi đăng ký</button></form> }</section>
+<section class="panel my-3"><h2>Sản phẩm đã đăng ký</h2>
+@if (Model.Items.Count == 0) { <p>Gian hàng chưa đăng ký sản phẩm.</p> }
+@foreach(var i in Model.Items) { <p><strong>@i.ProductName</strong> · @i.Sku · @i.CampaignTitle · @i.FlashPrice.ToString("N0") ₫ · @i.SoldCount/@i.TotalQuota suất · @i.Status</p> }
+</section>

@@ -1,0 +1,24 @@
+@model SaleWindow
+@inject IConfiguration Config
+@{ var live = Model.Campaign.Status == "ACTIVE"; var deadline = live ? Model.Campaign.EndTime : Model.Campaign.StartTime; }
+<section class="flash-window" data-flash-deadline="@deadline.ToString("O")" data-server-time="@Model.ServerTime.ToString("O")">
+<header><div><h2><i class="bi bi-lightning-charge-fill"></i> FLASH SALE</h2><span>@Model.Campaign.Title</span></div>
+<div class="flash-clock">@(live ? "Kết thúc sau" : "Bắt đầu sau") <strong role="timer">--:--:--</strong></div></header>
+@if (Model.Items.Count == 0) { <p class="empty">Chưa có sản phẩm được duyệt cho khung giờ này.</p> }
+<div class="flash-grid">@foreach (var item in Model.Items) {
+    <article>
+    <a class="flash-photo" asp-controller="Products" asp-action="Detail" asp-route-id="@item.ProductId">
+    @if (item.ImageUrl is string path && Uri.TryCreate(new Uri(Config["ApiBaseUrl"]!), path, out var url) && url.Scheme is "http" or "https") { <img src="@url" alt="@item.ProductName" loading="lazy" /> }</a>
+    <div class="flash-body"><small>@item.ShopName · @item.Sku</small><h3><a asp-controller="Products" asp-action="Detail" asp-route-id="@item.ProductId">@item.ProductName</a></h3>
+    <p><strong>@item.FlashPrice.ToString("N0") ₫</strong> <del>@item.RegularPrice.ToString("N0") ₫</del></p>
+    <progress value="@item.SoldCount" max="@item.TotalQuota" aria-label="Suất đã bán"></progress>
+    <small>Đã bán @item.SoldCount/@item.TotalQuota suất · Tối đa @item.MaxPerUser/khách</small>
+    @if(item.SoldCount == item.TotalQuota) { <b>Hết suất</b> }
+    else if ((long)item.SoldCount * 100 > (long)item.TotalQuota * 80) { <b>Sắp cháy hàng</b> }
+    @if (live && item.SoldCount < item.TotalQuota) {
+    <form asp-controller="Cart" asp-action="Add" method="post">
+        <input type="hidden" name="productId" value="@item.ProductId" /><input type="hidden" name="VariantId" value="@item.VariantId" />
+        <input type="hidden" name="Quantity" value="1" /><button class="btn btn-outline-primary btn-sm">Thêm vào giỏ</button>
+    </form> }
+    </div></article>
+}</div></section>

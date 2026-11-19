@@ -1,0 +1,20 @@
+body:has(.storefront) { background:#f5f5fa }
+.shop-banner,.shop-filters { background:white; border:1px solid #e4e0ea; border-radius:1rem }
+.shop-banner { display:flex; align-items:center; flex-wrap:wrap; gap:1.25rem; padding:clamp(1.2rem,3vw,2.5rem); border-top:4px solid #8264b4 }
+.shop-logo { flex:none; width:5.5rem; aspect-ratio:1; border-radius:1.25rem; display:grid; place-items:center; overflow:hidden; background:#eee8f6; color:#574073; font-size:2.4rem }
+.shop-logo img { width:100%; height:100%; object-fit:contain }
+.shop-heading { flex:1 1 15rem; overflow-wrap:anywhere }
+.shop-heading h1 { margin:.4rem 0; font-size:clamp(1.65rem,3vw,2.5rem) }
+.shop-heading p { margin:0; color:#534c5d; white-space:pre-line }
+.shop-active { display:inline-flex; align-items:center; gap:.35rem; background:#e7f5ec; color:#256444; border-radius:1rem; padding:.2rem .6rem; font-size:.83rem }
+.shop-stats { display:flex; flex-wrap:wrap; gap:1.25rem; margin:0 }
+.shop-stats dt { font-weight:400; font-size:.86rem; color:#60586a }
+.shop-stats dd { margin:.2rem 0 0; font-weight:650 }
+.shop-stats .bi-star-fill { color:#ac7207 }
+.shop-filters { display:flex; flex-wrap:wrap; align-items:end; gap:.85rem; margin:1rem 0; padding:1rem }
+.shop-filters label { flex:1 1 9rem; font-size:.85rem; font-weight:600 }
+.shop-filters label:first-child { flex:2 1 14rem }
+.shop-filters select,.shop-filters input { margin-top:.3rem }
+.shop-pages { display:flex; justify-content:center; align-items:center; flex-wrap:wrap; gap:1.25rem; padding:1.25rem 0 }
+#shop-products { scroll-margin-top:6rem }
+@media(max-width:650px) { .shop-stats { width:100%; padding-top:.7rem; border-top:1px solid #eee } .shop-logo { width:4rem } }

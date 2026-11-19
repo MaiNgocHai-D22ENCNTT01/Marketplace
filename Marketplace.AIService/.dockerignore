@@ -1,0 +1,7 @@
+*
+!requirements-runtime.txt
+!main.py
+!inference.py
+!labels.json
+!mobilenet.onnx
+!Dockerfile

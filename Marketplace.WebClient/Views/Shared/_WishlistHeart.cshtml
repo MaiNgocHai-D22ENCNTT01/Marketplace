@@ -1,0 +1,17 @@
+@model Guid
+@inject Marketplace.WebClient.Services.ShopApi Api
+@{
+    var liked = false;
+    if (Api.SignedIn)
+    {
+        try { liked = (await Api.WishlistIds(Context.RequestAborted)).Contains(Model); }
+        catch (HttpRequestException) { <span class="wish-heart" title="Chưa tải được danh sách yêu thích">…</span> return; }
+    }
+    var label = liked ? "Bỏ yêu thích" : "Thêm vào yêu thích";
+    var destination = Context.Request.PathBase + Context.Request.Path + Context.Request.QueryString;
+    if (Context.Request.Method != "GET") destination = Url.Action("Detail", "Products", new { id = Model });
+}
+<form class="wish-form" data-signed-in="@(Api.SignedIn ? "yes" : "")" data-login="@Url.Action("Login", "Account", new { returnUrl = destination })" asp-controller="Wishlists" asp-action="Toggle" asp-route-id="@Model" method="post">
+<input type="hidden" name="returnUrl" value="@destination" />
+<button class="wish-heart" type="submit" aria-label="@label" title="@label" aria-pressed="@(liked ? "true" : "false")"><i class="bi @(liked ? "bi-heart-fill" : "bi-heart")"></i></button>
+</form>

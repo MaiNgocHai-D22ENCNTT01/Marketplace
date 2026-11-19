@@ -1,0 +1,46 @@
+{
+  "utc": "2026-11-18T23:54:26.280372+00:00",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "settings": {
+    "port": 5116,
+    "base_url": null,
+    "mode": "warm",
+    "images": "E:\\đồ án tốt nghiệp\\Marketplace\\Marketplace.WebAPI\\wwwroot\\images\\demo\\tee-mint.png",
+    "users": 10000,
+    "requests": 10000,
+    "connections": 128,
+    "ramp": 30.0,
+    "think": 0,
+    "output": "visual-load-warm-10000.json"
+  },
+  "distinct_images": 1,
+  "peak_outstanding": 7012,
+  "elapsed_s": 100.325,
+  "requests": 10000,
+  "rps": 99.68,
+  "success_rps": 99.68,
+  "error_pct": 0.0,
+  "errors": 0,
+  "status": {
+    "200": 10000
+  },
+  "latency": {
+    "p50_ms": 35549.13,
+    "p95_ms": 67216.23,
+    "p99_ms": 69828.54
+  },
+  "client_admission_wait": {
+    "p50_ms": 34102.81,
+    "p95_ms": 66002.25,
+    "p99_ms": 68497.21
+  },
+  "note": "Closed-loop; latency includes client queue. Users are not simultaneous TCP connections.",
+  "groups": {
+    "HIT": {
+      "count": 10000,
+      "p50_ms": 35549.13,
+      "p95_ms": 67216.23,
+      "p99_ms": 69828.54
+    }
+  }
+}

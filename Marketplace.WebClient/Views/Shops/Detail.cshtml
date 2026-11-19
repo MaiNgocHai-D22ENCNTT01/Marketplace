@@ -1,0 +1,59 @@
+@model Marketplace.Application.Catalog.PublicShop
+@inject IConfiguration Configuration
+@{
+    ViewData["Title"] = Model.ShopName;
+    var query = Context.Request.Query;
+    var keyword = query["keyword"].ToString();
+    var categoryId = query["categoryId"].ToString();
+    var sort = query["sort"].ToString();
+    var pages = (int)Math.Ceiling((double)Model.FilteredTotal / Model.PageSize);
+    var logo = !string.IsNullOrWhiteSpace(Model.LogoUrl) && Uri.TryCreate(new Uri(Configuration["ApiBaseUrl"]!), Model.LogoUrl, out var image)
+        && image.Scheme is "http" or "https" ? image.AbsoluteUri : null;
+}
+<link rel="stylesheet" href="~/css/shop.css" asp-append-version="true" />
+<div class="storefront">
+<nav class="crumb" aria-label="Điều hướng"><a asp-controller="Home" asp-action="Index">Khám phá</a> / @Model.ShopName</nav>
+<header class="shop-banner">
+    <div class="shop-logo">
+        @if (logo is not null) { <img src="@logo" alt="Logo @Model.ShopName" /> }
+        else { <i class="bi bi-shop" aria-hidden="true"></i> }
+    </div>
+    <div class="shop-heading"><span class="shop-active"><i class="bi bi-check-circle-fill"></i> Đang hoạt động</span>
+        <h1>@Model.ShopName</h1>
+        @if (!string.IsNullOrWhiteSpace(Model.Description)) { <p>@Model.Description</p> }
+    </div>
+    <dl class="shop-stats">
+        <div><dt>Điểm đánh giá</dt><dd><i class="bi bi-star-fill"></i> @(Model.ReviewCount > 0 ? $"{Model.RatingAvg:0.0} / 5" : "Chưa có")</dd></div>
+        <div><dt>Sản phẩm</dt><dd>@Model.TotalProducts</dd></div>
+        <div><dt>Ngày tham gia</dt><dd>@Model.CreatedAt.ToString("dd/MM/yyyy")</dd></div>
+    </dl>
+</header>
+<section id="shop-products" class="collection">
+    <h2>Sản phẩm của Shop</h2>
+    <form class="shop-filters" asp-action="Detail" asp-route-id="@Model.Id" asp-fragment="shop-products" method="get">
+        <label>Tìm trong Shop<input class="form-control" type="search" name="keyword" value="@keyword" maxlength="255" placeholder="Nhập tên sản phẩm" /></label>
+        <label>Danh mục<select class="form-select" name="categoryId"><option value="">Tất cả danh mục</option>
+            @foreach (var c in Model.Categories) { <option value="@c.Id" selected="@(string.Equals(c.Id.ToString(), categoryId, StringComparison.OrdinalIgnoreCase))">@c.Name (@c.ProductCount)</option> }
+        </select></label>
+        <label>Sắp xếp<select class="form-select" name="sort">
+            <option value="newest" selected="@(sort is "" or "newest")">Mới nhất</option>
+            <option value="price_asc" selected="@(sort == "price_asc")">Giá tăng dần</option>
+            <option value="price_desc" selected="@(sort == "price_desc")">Giá giảm dần</option>
+        </select></label>
+        <button class="btn btn-primary">Áp dụng</button>
+    </form>
+    @if (Model.Products.Count == 0) {
+        <p class="empty">@(Model.TotalProducts == 0 ? "Gian hàng chưa có sản phẩm đang bán." : "Không tìm thấy sản phẩm trên trang này.")
+        @if (Model.TotalProducts > 0) { <a asp-action="Detail" asp-route-id="@Model.Id">Xem tất cả sản phẩm của Shop</a> }</p>
+    } else {
+        <div class="product-grid">@foreach (var product in Model.Products) { <partial name="_ProductCard" model="product" /> }</div>
+        @if (pages > 1) {
+            <nav class="shop-pages" aria-label="Trang sản phẩm">
+            @if (Model.Page > 1) { <a asp-action="Detail" asp-route-id="@Model.Id" asp-route-keyword="@keyword" asp-route-categoryId="@categoryId" asp-route-sort="@(sort == "" ? "newest" : sort)" asp-route-page="@(Model.Page-1)" asp-fragment="shop-products">← Trang trước</a> }
+            <span>Trang @Model.Page / @pages</span>
+            @if (Model.Page < pages) { <a asp-action="Detail" asp-route-id="@Model.Id" asp-route-keyword="@keyword" asp-route-categoryId="@categoryId" asp-route-sort="@(sort == "" ? "newest" : sort)" asp-route-page="@(Model.Page+1)" asp-fragment="shop-products">Trang sau →</a> }
+            </nav>
+        }
+    }
+</section>
+</div>

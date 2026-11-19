@@ -1,0 +1,17 @@
+<dialog id="review-dialog" aria-labelledby="review-title">
+<form asp-action="Review" method="post">
+    <h2 id="review-title">Đánh giá sản phẩm</h2>
+    <p id="review-product"></p>
+    <input type="hidden" name="orderItemId" />
+    <fieldset><legend class="h6">Bạn chấm sản phẩm mấy sao?</legend>
+    <div class="review-stars">
+    @for (var i = 1; i <= 5; i++) {
+        <label><input type="radio" name="rating" value="@i" aria-label="@i sao" required /><span aria-hidden="true">★</span></label>
+    }
+    </div></fieldset>
+    <label class="d-block my-2">Nhận xét chi tiết (không bắt buộc, tối đa 1.000 ký tự)<textarea name="comment" maxlength="1000" placeholder="Chất lượng sản phẩm thế nào? Đóng gói có cẩn thận không?" rows="4" class="form-control"></textarea></label>
+    <label>Ảnh đánh giá (tối đa 3)<input type="file" id="review-files" multiple accept="image/jpeg,image/png,image/webp" class="form-control" /></label>
+    <p id="review-error" role="alert"></p>
+    <button class="btn btn-primary">Gửi đánh giá</button>
+    <button type="button" class="btn btn-light" data-close>Hủy</button>
+</form></dialog>

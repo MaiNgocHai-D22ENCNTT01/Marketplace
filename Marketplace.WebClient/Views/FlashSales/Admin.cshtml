@@ -1,0 +1,22 @@
+@model AdminSalesPage
+@{ViewData["Title"]="Quản trị Flash Sale";}
+<nav class="crumb"><a asp-controller="Admin" asp-action="Index">Quản trị</a> / Flash Sale</nav><h1>Flash Sale toàn sàn</h1>
+<section class="panel"><h2>Tạo khung giờ</h2>
+<form asp-action="Create" method="post" class="form-stack">
+<label>Tên chiến dịch<input class="form-control" name="title" maxlength="160" required /></label>
+<label>Bắt đầu (giờ Việt Nam)<input type="datetime-local" name="startTime" class="form-control" required /></label>
+<label>Kết thúc (giờ Việt Nam)<input type="datetime-local" name="endTime" class="form-control" required /></label>
+<button class="btn btn-primary">Tạo chiến dịch</button></form></section>
+<section class="panel my-3"><h2>Đăng ký chờ duyệt</h2>
+@if(Model.Pending.Count == 0) { <p>Chưa có đăng ký chờ duyệt.</p> }
+@foreach(var item in Model.Pending) {
+<article class="border-top py-2"><strong>@item.ProductName · @item.Sku</strong><p>@item.ShopName · @item.CampaignTitle</p>
+<p>@item.RegularPrice.ToString("N0") ₫ → @item.FlashPrice.ToString("N0") ₫ · @item.TotalQuota suất · tối đa @item.MaxPerUser/khách</p>
+<form asp-action="Decide" asp-route-id="@item.Id" method="post">
+<button class="btn btn-primary" name="status" value="APPROVED">Duyệt</button>
+<button class="btn btn-outline-secondary" name="status" value="REJECTED">Từ chối</button></form></article>
+}</section>
+<section class="panel"><h2>Các khung giờ</h2>
+@foreach(var c in Model.Campaigns.OrderByDescending(x=>x.StartTime)) {
+<p><strong>@c.Title</strong> · @c.StartTime.AddHours(7).ToString("dd/MM/yyyy HH:mm") – @c.EndTime.AddHours(7).ToString("dd/MM/yyyy HH:mm") (GMT+7) · @c.Status</p>
+}</section>

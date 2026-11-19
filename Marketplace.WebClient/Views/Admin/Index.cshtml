@@ -1,0 +1,27 @@
+@model AdminPage
+@{ ViewData["Title"]="Quản trị hệ thống"; }
+<h1>Quản trị hệ thống</h1>
+<nav class="nav nav-tabs"><a class="nav-link active" asp-action="Index">Tổng quan</a><a class="nav-link" asp-controller="FlashSales" asp-action="Admin">Quản lý Flash Sale</a></nav>
+<p><a asp-action="Reviews">Kiểm duyệt đánh giá</a></p>
+<div class="kpis"><div class="kpi"><i class="bi bi-people"></i><strong>@Model.Stats.Users</strong><small>Người dùng</small></div>
+<div class="kpi"><i class="bi bi-shop"></i><strong>@Model.Stats.Shops</strong><small>Gian hàng</small></div>
+<div class="kpi"><i class="bi bi-box"></i><strong>@Model.Stats.Products</strong><small>Sản phẩm</small></div>
+<div class="kpi"><i class="bi bi-bag"></i><strong>@Model.Stats.Orders</strong><small>Đơn hàng</small></div>
+<div class="kpi"><i class="bi bi-wallet2"></i><strong>@Model.Stats.Revenue.ToString("N0") ₫</strong><small>Doanh thu đơn hoàn tất</small></div></div>
+<section class="panel"><h2>Gian hàng chờ duyệt</h2>
+@if (Model.Shops.Count == 0) { <p>Không có yêu cầu chờ duyệt.</p> }
+@foreach (var s in Model.Shops) { <form asp-action="Approve" asp-route-id="@s.Id" method="post">@s.Name <button class="btn btn-outline-primary">Duyệt gian hàng</button></form> }
+</section>
+<details class="my-3"><summary>Quản lý người dùng (@Model.Users.Count)</summary><div class="table-responsive"><table class="table"><tbody>
+@foreach (var u in Model.Users) { <tr><td>@u.Name</td><td><span class="status" data-status="@u.Status">@u.Status</span></td><td><form asp-action="UserStatus" asp-route-id="@u.Id" method="post">
+<button name="status" value="@(u.Status == "ACTIVE" ? "BANNED" : "ACTIVE")" class="btn btn-outline-secondary">@(u.Status == "ACTIVE" ? "Khóa" : "Mở khóa")</button></form></td></tr> }
+</tbody></table></div></details>
+<details class="my-3"><summary>Kiểm duyệt sản phẩm (@Model.Products.Count)</summary><div class="table-responsive"><table class="table"><tbody>
+@foreach (var p in Model.Products) { <tr><td>@p.Name</td><td><span class="status" data-status="@p.Status">@p.Status</span></td><td>
+@if (p.Status == "ACTIVE") { <form asp-action="Hide" asp-route-id="@p.Id" method="post"><button class="btn btn-outline-secondary">Ẩn sản phẩm</button></form> }</td></tr> }
+</tbody></table></div></details>
+<section class="panel"><h2>Nhật ký quản trị</h2>
+<div class="table-responsive"><table class="table"><thead><tr><th>Thời điểm</th><th>Quản trị viên</th><th>Thao tác</th><th>Đối tượng</th><th>Thay đổi</th></tr></thead><tbody>
+@foreach (var l in Model.Logs) { <tr><td>@l.Timestamp</td><td>@l.Admin</td><td>@l.Action</td><td>@l.TargetEntity · @l.TargetId</td><td>@l.Details</td></tr> }
+</tbody></table></div>
+</section>

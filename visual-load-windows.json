@@ -1,0 +1,55 @@
+{
+  "utc": "2026-11-15T09:44:42.540600+00:00",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "settings": {
+    "port": 50277,
+    "images": "E:\\đồ án tốt nghiệp\\Marketplace\\Marketplace.WebAPI\\wwwroot\\images\\demo",
+    "users": 10000,
+    "requests": 10000,
+    "connections": 128,
+    "ramp": 30.0,
+    "think": 0,
+    "output": "E:\\đồ án tốt nghiệp\\Marketplace\\visual-load-windows.json"
+  },
+  "distinct_images": 120,
+  "peak_outstanding": 9947,
+  "elapsed_s": 1198.46,
+  "requests": 10000,
+  "rps": 8.34,
+  "success_rps": 4.15,
+  "error_pct": 50.22,
+  "errors": 5022,
+  "status": {
+    "200": 4978,
+    "503": 227,
+    "PoolTimeout": 4720,
+    "400": 8,
+    "ReadError": 15,
+    "ConnectTimeout": 52
+  },
+  "latency": {
+    "p50_ms": 1071211.71,
+    "p95_ms": 1155601.21,
+    "p99_ms": 1163627.23
+  },
+  "groups": {
+    "MISS": {
+      "count": 161,
+      "p50_ms": 1075820.33,
+      "p95_ms": 1112230.58,
+      "p99_ms": 1114715.38
+    },
+    "error": {
+      "count": 5022,
+      "p50_ms": 738927.06,
+      "p95_ms": 800180.88,
+      "p99_ms": 1101943.71
+    },
+    "HIT": {
+      "count": 4817,
+      "p50_ms": 1127163.3,
+      "p95_ms": 1159487.76,
+      "p99_ms": 1172040.56
+    }
+  }
+}

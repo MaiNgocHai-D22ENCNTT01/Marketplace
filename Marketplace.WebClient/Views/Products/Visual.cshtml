@@ -1,0 +1,11 @@
+@model Marketplace.Application.Catalog.VisualResult
+@{ ViewData["Title"] = "Kết quả tìm bằng ảnh"; }
+<div class="section-head"><h1>Kết quả tìm bằng ảnh</h1><button class="btn btn-outline-primary" data-visual><i class="bi bi-camera"></i> Chọn ảnh khác</button></div>
+@if (ViewData["Error"] is string error) { <p class="alert alert-warning">@error</p> }
+else if (Model != null) {
+<section class="recognition"><i class="bi bi-stars feature-icon"></i><div><small>AI nhận diện</small><h2>@(Model.Category ?? "Chưa xác định ngành hàng")</h2></div><span class="ai-tag">Độ tin cậy @((Model.Confidence * 100).ToString("0"))%</span></section>
+@if (Model.Products.Count == 0) { <p class="empty">Chưa có sản phẩm tương đồng trong danh mục đang bán.</p> }
+else { <div class="product-grid">@foreach (var hit in Model.Products) {
+var cardData = new ViewDataDictionary(ViewData) { ["Similarity"] = (hit.SimilarityScore * 100).ToString("0") };
+<partial name="_ProductCard" model="hit.Product" view-data="cardData" />
+}</div> } }

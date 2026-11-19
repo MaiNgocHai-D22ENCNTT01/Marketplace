@@ -1,0 +1,19 @@
+@model ProductDetail
+@inject IConfiguration Configuration
+@{ ViewData["Title"] = Model.Product.Name; var first = Model.ProductVariants.FirstOrDefault(v => v.StockQuantity > 0); }
+<nav class="crumb"><a asp-controller="Home" asp-action="Index">Khám phá</a> / <a asp-controller="Home" asp-action="Index" asp-route-categoryId="@Model.CategoryId">@Model.Product.Category</a></nav>
+<div class="detail-panel"><div class="detail-photo"><partial name="_WishlistHeart" model="Model.Product.Id" />
+@if (Model.Product.ImageUrl is string path && Uri.TryCreate(new Uri(Configuration["ApiBaseUrl"]!), path, out var image) && image.Scheme is "http" or "https") { <img src="@image" alt="@Model.Product.Name" /> }
+else { <i class="bi bi-image"></i> }</div>
+<section><small>@Model.Product.Category</small><h1>@Model.Product.Name</h1><p><a asp-controller="Shops" asp-action="Detail" asp-route-id="@Model.Shop.Id"><i class="bi bi-shop"></i> @Model.Shop.Name</a></p><p class="price detail-price">@((first?.Price ?? Model.Product.Price).ToString("N0")) ₫</p><p>@Model.Description</p>
+<a class="btn btn-outline-primary mb-3" asp-controller="Shops" asp-action="Detail" asp-route-id="@Model.Shop.Id">Xem Shop</a>
+<a class="btn btn-outline-primary mb-3" asp-controller="Chat" asp-action="Index" asp-route-shopId="@Model.Shop.Id" asp-route-productId="@Model.Product.Id" asp-route-shopName="@Model.Shop.Name">Chat với Shop</a>
+<form asp-controller="Cart" asp-action="Add" method="post"><input type="hidden" name="productId" value="@Model.Product.Id" />
+<fieldset class="variants"><legend>Chọn biến thể</legend>
+@foreach (var v in Model.ProductVariants) {
+<label><input type="radio" name="VariantId" value="@v.Id" required checked="@(first?.Id == v.Id)" disabled="@(v.StockQuantity <= 0)" data-price="@v.Price.ToString("N0") ₫" data-stock="@v.StockQuantity"/>
+<span>@(string.IsNullOrWhiteSpace(v.Label) ? v.Sku : v.Label)<small>@v.Price.ToString("N0") ₫ · @(v.StockQuantity > 0 ? $"Còn {v.StockQuantity}" : "Hết hàng")</small></span></label> }</fieldset>
+<div class="purchase"><label>Số lượng<input class="form-control" type="number" name="Quantity" min="1" max="@first?.StockQuantity" value="1" required /></label>
+<button class="btn btn-primary" disabled="@(first == null)"><i class="bi bi-bag-plus"></i> Thêm vào giỏ hàng</button></div></form></section></div>
+<partial name="_ProductReviews" model="@((ProductReviews)ViewData["Reviews"]!)" />
+<section class="collection"><h2>Sản phẩm tương tự</h2>@await Component.InvokeAsync("Recommendations", new { productId = Model.Product.Id })</section>
